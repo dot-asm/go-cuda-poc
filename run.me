@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+if [ ! -f poc.so -o poc.cu -nt poc.so ]; then
+    (set -x; nvcc -shared -o poc.so poc.cu \
+                  -Xcompiler -fPIC,-fvisibility=hidden -Xlinker -Bsymbolic)
+fi
+
+if [ ! -f poc -o poc.go -nt poc ]; then
+    (set -x; go build poc.go)
+fi
+
+set -x; env LD_PRELOAD=poc.so ./poc
