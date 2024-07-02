@@ -9,4 +9,4 @@ if [ ! -f poc -o poc.go -nt poc ]; then
     (set -x; go build poc.go)
 fi
 
-set -x; env LD_PRELOAD=poc.so ./poc
+set -x; ./poc
