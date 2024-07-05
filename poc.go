@@ -3,6 +3,7 @@ package main
 // #cgo linux linux LDFLAGS: -ldl -Wl,-rpath,"$ORIGIN"
 // #ifdef _WIN32
 // # include <windows.h>
+// # include <stdio.h>
 // #else
 // # include <dlfcn.h>
 // # include <errno.h>
@@ -15,7 +16,7 @@ package main
 //     char *message;
 // } Error;
 //
-// static Error (*cuda_call)();
+// static Error (*cuda_call)(/* args */);
 //
 // typedef struct {
 //     int code;
@@ -34,7 +35,7 @@ package main
 //     }
 // }
 //
-// static void bridge(GoError *go_err)
+// static _Bool load(_GoString_ *go_err)
 // {
 //     if (cuda_call == NULL) {
 // #ifdef _WIN32
@@ -44,8 +45,9 @@ package main
 //         }
 //         if (h != NULL) cuda_call = (void*)GetProcAddress(h, "cuda_call");
 //         if (cuda_call == NULL) {
-//             Error c_err = {GetLastError(), NULL};
-//             toGoError(go_err, c_err);
+//             static char buf[24];
+//             snprintf(buf, sizeof(buf), "WIN32 Error #0x%x", GetLastError());
+//             toGoString(go_err, buf);
 //         }
 // #else
 //         void* h = dlopen("poc.so", RTLD_NOW|RTLD_GLOBAL);
@@ -57,14 +59,16 @@ package main
 //         }
 //         if (h != NULL) cuda_call = dlsym(h, "cuda_call");
 //         if (cuda_call == NULL) {
-//             Error c_err = {ENOENT, strdup(dlerror())};
-//             toGoError(go_err, c_err);
+//             toGoString(go_err, dlerror());
 //         }
 // #endif
 //     }
 //
-//     if (cuda_call) toGoError(go_err, cuda_call());
+//     return cuda_call != NULL;
 // }
+//
+// static void bridge(GoError *go_err /*, args */)
+// {   toGoError(go_err, cuda_call(/* args */));   }
 import "C"
 
 //export toGoString
@@ -72,9 +76,16 @@ func toGoString(go_str *string, c_str *C.char) {
     *go_str = C.GoString(c_str)
 }
 
+func init() {
+    var err string
+    if !C.load(&err) {
+        panic(err)
+    }
+}
+
 func main() {
     var err C.GoError
-    C.bridge(&err)
+    C.bridge(&err /*, args */)
     if err.code != 0 {
         panic(err.message)
     }
