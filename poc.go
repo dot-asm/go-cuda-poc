@@ -5,8 +5,10 @@ package main
 // # include <windows.h>
 // #else
 // # include <dlfcn.h>
-// # include <stdlib.h>
+// # include <errno.h>
 // #endif
+// #include <stdlib.h>
+// #include <string.h>
 //
 // typedef struct {
 //     int code;
@@ -41,6 +43,10 @@ package main
 //             h = LoadLibraryA("poc.dll");
 //         }
 //         if (h != NULL) cuda_call = (void*)GetProcAddress(h, "cuda_call");
+//         if (cuda_call == NULL) {
+//             Error c_err = {GetLastError(), NULL};
+//             toGoError(go_err, c_err);
+//         }
 // #else
 //         void* h = dlopen("poc.so", RTLD_NOW|RTLD_GLOBAL);
 //         if (h == NULL &&
@@ -50,6 +56,10 @@ package main
 //             h = dlopen("./poc.so", RTLD_NOW|RTLD_GLOBAL);
 //         }
 //         if (h != NULL) cuda_call = dlsym(h, "cuda_call");
+//         if (cuda_call == NULL) {
+//             Error c_err = {ENOENT, strdup(dlerror())};
+//             toGoError(go_err, c_err);
+//         }
 // #endif
 //     }
 //
