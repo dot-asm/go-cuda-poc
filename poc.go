@@ -1,6 +1,6 @@
 package main
 
-// #cgo linux linux LDFLAGS: -ldl -Wl,-rpath,"$ORIGIN"
+// #cgo linux LDFLAGS: -ldl -Wl,-rpath,"$ORIGIN"
 // #ifdef _WIN32
 // # include <windows.h>
 // # include <stdio.h>
